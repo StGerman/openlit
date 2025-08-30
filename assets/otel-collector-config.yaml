@@ -17,7 +17,7 @@ extensions:
   zpages: {}
 exporters:
   clickhouse:
-    endpoint: tcp://${env:INIT_DB_HOST}:${env:INIT_DB_PORT}?dial_timeout=10s
+    endpoint: tcp://${env:OTEL_DB_HOST}:${env:OTEL_DB_PORT}?dial_timeout=10s&secure=${env:OTEL_DB_SECURE:-false}
     database: ${env:INIT_DB_DATABASE}
     username: ${env:INIT_DB_USERNAME}
     password: ${env:INIT_DB_PASSWORD}
@@ -25,7 +25,7 @@ exporters:
     logs_table_name: otel_logs
     traces_table_name: otel_traces
     metrics_table_name: otel_metrics
-    timeout: 5s
+    timeout: 15s
     retry_on_failure:
       enabled: true
       initial_interval: 5s
