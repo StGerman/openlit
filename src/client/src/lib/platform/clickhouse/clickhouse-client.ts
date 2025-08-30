@@ -15,23 +15,23 @@ interface ClickHouseConnectionInfo {
 const getClickHouseFactoryOptions = (
 	connectionObject: ClickHouseConnectionInfo
 ) => ({
-	create: async (): Promise<ClickHouseClient> => {
-		return new Promise(async (resolve) => {
-			const client: ClickHouseClient = createClient(connectionObject);
-			return resolve(client);
+	create: (): Promise<ClickHouseClient> => {
+		const client: ClickHouseClient = createClient({
+			...connectionObject,
+			request_timeout: 30000, // 30 second timeout for cloud connections
+			max_open_connections: 5,
 		});
+		return Promise.resolve(client);
 	},
 	destroy: (client: ClickHouseClient) => client.close(),
-	validate: (client: ClickHouseClient): Promise<boolean> => {
-		return new Promise(async (resolve, reject) => {
-			const [err, result] = await asaw(client.ping());
-			if (err || !result.success) {
-				client.close();
-				return reject(result.error?.toString() || "Unable to ping the db");
-			}
+	validate: async (client: ClickHouseClient): Promise<boolean> => {
+		const [err, result] = await asaw(client.ping());
+		if (err || !result.success) {
+			client.close();
+			throw new Error(result.error?.toString() || "Unable to ping the db");
+		}
 
-			return resolve(true);
-		});
+		return true;
 	},
 });
 
@@ -47,11 +47,12 @@ export default function createClickhousePool(
 	};
 
 	return createPool(getClickHouseFactoryOptions(connectionObject), {
-		max: 20,
-		min: 5,
-		idleTimeoutMillis: 30000,
-		maxWaitingClients: 5,
+		max: 10,
+		min: 2,
+		idleTimeoutMillis: 60000,
+		maxWaitingClients: 10,
 		testOnBorrow: true,
-		acquireTimeoutMillis: 5000,
+		acquireTimeoutMillis: 30000, // Increased from 5s to 30s for cloud connections
+		evictionRunIntervalMillis: 10000,
 	});
 }
