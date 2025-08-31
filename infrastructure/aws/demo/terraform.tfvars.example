@@ -1,0 +1,28 @@
+# Infrastructure Configuration
+aws_region    = "us-east-1"
+environment   = "demo"
+instance_type = "t4g.small"
+key_pair_name = "your-key-pair-name"  # Replace with your actual key pair name
+allowed_cidrs = ["YOUR.IP.ADDRESS/32"]  # Replace with your actual IP address
+
+# Container Configuration
+aws_account_id = "586794484970"  # Your AWS Account ID from prerequisites check
+ecr_repository = "openlit-vostok"
+image_tag      = "latest"
+
+# ClickHouse Configuration
+# Get these from your existing ClickHouse Cloud setup or src/client/.env
+clickhouse_host     = "https://v5s7ohqrt5.us-east-1.aws.clickhouse.cloud"
+clickhouse_port     = "8443"
+clickhouse_database = "openlit"
+clickhouse_username = "default"
+clickhouse_password = "REPLACE_WITH_YOUR_CLICKHOUSE_PASSWORD"
+
+# OTEL Configuration
+otel_host   = "v5s7ohqrt5.us-east-1.aws.clickhouse.cloud"
+otel_port   = "9440"
+otel_secure = true
+
+# Demo Accounts
+demo_emails    = "stas.german@gmail.com,dutov.vv@vostokit.ru"
+demo_passwords = "MikMeusSatan123!,KFj8!sdf3@df"

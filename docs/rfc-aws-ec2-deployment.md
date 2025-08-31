@@ -20,7 +20,7 @@ This RFC proposes deploying OpenLIT AI observability platform on AWS EC2 using G
 
 ### Technical Requirements
 - ARM64 compatibility for Graviton instances
-- Integration with existing ClickHouse Cloud (v5s7ohqrt5.us-east-1.aws.clickhouse.cloud)
+- Integration with existing ClickHouse Cloud instance
 - Docker Compose orchestration
 - Infrastructure as Code using Terraform
 - Automated deployment and health checks
@@ -44,7 +44,7 @@ graph TB
     end
 
     subgraph External["☁️ External Services"]
-        ClickHouse["ClickHouse Cloud<br/>v5s7ohqrt5.us-east-1.aws.clickhouse.cloud<br/>- Telemetry Data<br/>- Traces & Metrics<br/>- Spans & Events"]
+        ClickHouse["ClickHouse Cloud<br/>your-instance.clickhouse.cloud<br/>- Telemetry Data<br/>- Traces & Metrics<br/>- Spans & Events"]
     end
 
     %% Data Flow
@@ -142,7 +142,7 @@ Before implementing this RFC, ensure the following prerequisites are met:
 
 #### Project Setup
 - **Repository Access**: Clone the OpenLIT repository to `/Users/sgerman/Code/openlit`
-- **ClickHouse Cloud**: Existing ClickHouse Cloud instance configured (v5s7ohqrt5.us-east-1.aws.clickhouse.cloud)
+- **ClickHouse Cloud**: Existing ClickHouse Cloud instance configured
 - **Environment Variables**: ClickHouse credentials and connection details available
 
 #### Verification Commands
@@ -225,14 +225,14 @@ ecr_repository    = "openlit-vostok"
 image_tag         = "latest"
 
 # ClickHouse Configuration (from existing .env)
-clickhouse_host     = "https://v5s7ohqrt5.us-east-1.aws.clickhouse.cloud"
+clickhouse_host     = "https://your-instance.clickhouse.cloud"
 clickhouse_port     = "8443"
 clickhouse_database = "openlit"
 clickhouse_username = "default"
-clickhouse_password = "HZqNl2H~dpl5x"
+clickhouse_password = "your_clickhouse_password"
 
 # OTEL Configuration
-otel_host   = "v5s7ohqrt5.us-east-1.aws.clickhouse.cloud"
+otel_host   = "your-instance.clickhouse.cloud"
 otel_port   = "9440"
 otel_secure = true
 
@@ -574,7 +574,7 @@ sudo systemctl status openlit.service
 sudo journalctl -u openlit.service -f
 
 # 2. ClickHouse connectivity
-curl -v https://v5s7ohqrt5.us-east-1.aws.clickhouse.cloud:8443
+curl -v https://your-instance.clickhouse.cloud:8443
 
 # 3. Container issues
 docker-compose ps
@@ -682,7 +682,6 @@ This phase is complete when:
 - [ ] Validate demo account functionality
 - [ ] Test ClickHouse connectivity and data flow
 - [ ] Verify ARM64 container compatibility
-- [ ] Conduct load testing for demo scenarios
 
 ### Phase 4: Documentation (Day 2)
 - [ ] Complete deployment runbooks

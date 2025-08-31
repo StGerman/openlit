@@ -12,8 +12,11 @@ RUN apk add --no-cache python3 py3-pip pipx rust cargo build-base
 # Create a virtual environment
 RUN python3 -m venv /app/client/venv
 
-# Install litellm inside the virtual environment
-RUN /app/client/venv/bin/pip install --no-cache-dir litellm
+# Install litellm inside the virtual environment (skip tiktoken build issues for ARM64)
+# Use pre-built wheels where possible and install compatible versions
+RUN /app/client/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /app/client/venv/bin/pip install --no-cache-dir tiktoken==0.7.0 && \
+    /app/client/venv/bin/pip install --no-cache-dir litellm
 
 RUN find /app/client/venv -name '*.pyc' -delete && \
     find /app/client/venv -name '__pycache__' -type d -exec rm -r {} +

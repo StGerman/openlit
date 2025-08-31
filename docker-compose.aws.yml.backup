@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  openlit:
+    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG:-latest}
+    platform: linux/arm64
+    container_name: openlit-ui
+    environment:
+      # Core Configuration
+      - TELEMETRY_ENABLED=${TELEMETRY_ENABLED:-true}
+      
+      # ClickHouse Configuration
+      - INIT_DB_HOST=${INIT_DB_HOST}
+      - INIT_DB_PORT=${INIT_DB_PORT:-8443}
+      - INIT_DB_DATABASE=${INIT_DB_DATABASE:-openlit}
+      - INIT_DB_USERNAME=${INIT_DB_USERNAME:-default}
+      - INIT_DB_PASSWORD=${INIT_DB_PASSWORD}
+      
+      # SQLite Configuration
+      - SQLITE_DATABASE_URL=file:/app/client/data/data.db
+      
+      # Server Configuration
+      - PORT=${OPENLIT_PORT:-3000}
+      - DOCKER_PORT=${OPENLIT_PORT:-3000}
+      - NODE_ENV=${NODE_ENV:-production}
+      
+      # Demo Account Configuration
+      - DEMO_ACCOUNT_EMAIL=${DEMO_ACCOUNT_EMAIL}
+      - DEMO_ACCOUNT_PASSWORD=${DEMO_ACCOUNT_PASSWORD}
+      
+      # Security Configuration
+      - SECURE_COOKIES=${SECURE_COOKIES:-false}
+      - SESSION_SECRET=${SESSION_SECRET:-openlit-demo-secret}
+      
+      # Feature Flags
+      - ENABLE_DEMO_MODE=${ENABLE_DEMO_MODE:-true}
+      - ENABLE_ANALYTICS=${ENABLE_ANALYTICS:-true}
+      
+    ports:
+      - "${OPENLIT_PORT:-3000}:${OPENLIT_PORT:-3000}"
+    volumes:
+      - openlit-data:/app/client/data
+      - openlit-logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      - otel-collector
+    networks:
+      - openlit-network
+    labels:
+      - "service=openlit-ui"
+      - "environment=${ENVIRONMENT:-demo}"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:${OTEL_VERSION:-0.94.0}
+    platform: linux/arm64
+    container_name: otel-collector
+    environment:
+      # ClickHouse Configuration
+      - OTEL_DB_HOST=${OTEL_DB_HOST}
+      - OTEL_DB_PORT=${OTEL_DB_PORT:-9440}
+      - INIT_DB_DATABASE=${INIT_DB_DATABASE:-openlit}
+      - INIT_DB_USERNAME=${INIT_DB_USERNAME:-default}
+      - INIT_DB_PASSWORD=${INIT_DB_PASSWORD}
+      
+      # Collector Configuration
+      - OTEL_LOG_LEVEL=${OTEL_LOG_LEVEL:-info}
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=otel-collector,service.version=${OTEL_VERSION:-0.94.0}
+      
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics
+      - "55679:55679" # zpages
+    volumes:
+      - ./assets/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - otel-data:/var/lib/otelcol
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - openlit-network
+    labels:
+      - "service=otel-collector"
+      - "environment=${ENVIRONMENT:-demo}"
+
+  # Optional: Prometheus for monitoring (if needed)
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v2.45.0}
+    platform: linux/arm64
+    container_name: prometheus
+    profiles:
+      - monitoring
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=7d'
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+    networks:
+      - openlit-network
+    labels:
+      - "service=prometheus"
+      - "environment=${ENVIRONMENT:-demo}"
+
+volumes:
+  openlit-data:
+    driver: local
+    labels:
+      - "service=openlit-ui"
+      - "type=application-data"
+  
+  openlit-logs:
+    driver: local
+    labels:
+      - "service=openlit-ui"
+      - "type=logs"
+  
+  otel-data:
+    driver: local
+    labels:
+      - "service=otel-collector"
+      - "type=telemetry-buffer"
+  
+  prometheus-data:
+    driver: local
+    labels:
+      - "service=prometheus"
+      - "type=metrics-storage"
+
+networks:
+  openlit-network:
+    driver: bridge
+    labels:
+      - "service=openlit"
+      - "environment=${ENVIRONMENT:-demo}"
