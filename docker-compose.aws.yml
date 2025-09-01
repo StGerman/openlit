@@ -1,0 +1,47 @@
+services:
+  openlit:
+    image: ghcr.io/openlit/openlit:latest
+    platform: linux/arm64
+    environment:
+      - TELEMETRY_ENABLED=${TELEMETRY_ENABLED:-true}
+      - INIT_DB_HOST=${INIT_DB_HOST}
+      - INIT_DB_PORT=${INIT_DB_PORT}
+      - INIT_DB_DATABASE=${INIT_DB_DATABASE:-openlit}
+      - INIT_DB_USERNAME=${INIT_DB_USERNAME:-default}
+      - INIT_DB_PASSWORD=${INIT_DB_PASSWORD}
+      - SQLITE_DATABASE_URL=file:/app/client/data/data.db
+      - PORT=${PORT:-3000}
+      - DOCKER_PORT=${PORT:-3000}
+      - DEMO_ACCOUNT_EMAIL=${DEMO_ACCOUNT_EMAIL}
+      - DEMO_ACCOUNT_PASSWORD=${DEMO_ACCOUNT_PASSWORD}
+    ports:
+      - "${PORT:-3000}:${DOCKER_PORT:-3000}"
+    volumes:
+      - openlit-data:/app/client/data
+    restart: always
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.94.0
+    platform: linux/arm64
+    environment:
+      - OTEL_DB_HOST=${OTEL_DB_HOST}
+      - OTEL_DB_PORT=${OTEL_DB_PORT}
+      - OTEL_DB_SECURE=${OTEL_DB_SECURE:-true}
+      - INIT_DB_HOST=${INIT_DB_HOST}
+      - INIT_DB_PORT=${INIT_DB_PORT}
+      - INIT_DB_DATABASE=${INIT_DB_DATABASE:-openlit}
+      - INIT_DB_USERNAME=${INIT_DB_USERNAME:-default}
+      - INIT_DB_PASSWORD=${INIT_DB_PASSWORD}
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+      - "55679:55679"
+    volumes:
+      - ./assets/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    restart: always
+    depends_on:
+      - openlit
+
+volumes:
+  openlit-data:

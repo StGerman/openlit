@@ -87,6 +87,8 @@ services:
     environment:
       - OTEL_DB_HOST=${otel_host}
       - OTEL_DB_PORT=${otel_port}
+      - INIT_DB_HOST=${clickhouse_host}
+      - INIT_DB_PORT=${clickhouse_port}
       - INIT_DB_DATABASE=${clickhouse_database}
       - INIT_DB_USERNAME=${clickhouse_username}
       - INIT_DB_PASSWORD=${clickhouse_password}

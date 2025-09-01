@@ -17,7 +17,7 @@ extensions:
   zpages: {}
 exporters:
   clickhouse:
-    endpoint: https://${env:OTEL_DB_HOST}:8443
+    endpoint: https://${env:OTEL_DB_HOST}:${env:OTEL_DB_PORT}?dial_timeout=10s&secure=true
     database: ${env:INIT_DB_DATABASE}
     username: ${env:INIT_DB_USERNAME}
     password: ${env:INIT_DB_PASSWORD}

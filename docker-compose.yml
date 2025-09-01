@@ -33,6 +33,8 @@ services:
     environment:
       OTEL_DB_HOST: ${OTEL_DB_HOST}
       OTEL_DB_PORT: ${OTEL_DB_PORT}
+      INIT_DB_HOST: ${INIT_DB_HOST}
+      INIT_DB_PORT: ${INIT_DB_PORT}
       INIT_DB_DATABASE: ${INIT_DB_DATABASE:-openlit}
       INIT_DB_USERNAME: ${INIT_DB_USERNAME:-default}
       INIT_DB_PASSWORD: ${INIT_DB_PASSWORD}
