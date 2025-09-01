@@ -1,0 +1,102 @@
+name: 🔒 OpenLIT Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    name: 🛡️ Scan for Exposed Secrets
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history scan
+          
+      - name: Install git-secrets
+        run: |
+          git clone https://github.com/awslabs/git-secrets.git
+          cd git-secrets
+          sudo make install PREFIX=/usr/local
+          
+      - name: Configure git-secrets
+        run: |
+          # Install hooks
+          git secrets --install
+          
+          # Register AWS patterns
+          git secrets --register-aws
+          
+          # Add OpenLIT-specific patterns
+          git secrets --add 'DATABASE_URL.*[=:].*[A-Za-z0-9_\-@:/?&=]+'
+          git secrets --add 'CLICKHOUSE_.*[=:].*[A-Za-z0-9_\-@:/?&=]+'
+          git secrets --add 'ANTHROPIC.*KEY.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'OPENAI.*KEY.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'PINECONE_API_KEY.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'GROQ_API_KEY.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'MISTRAL_API_KEY.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'CO_API_KEY.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'ELEVEN_API_KEY.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'GOOGLE_AI_STUDIO.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'AZURE_AI_INFERENCE.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'REKA_API_KEY.*[=:].*[A-Za-z0-9_\-]+'
+          git secrets --add 'QDRANT_.*[=:].*[A-Za-z0-9_\-@:/?&=]+'
+          git secrets --add 'MILVUS_.*[=:].*[A-Za-z0-9_\-@:/?&=]+'
+          
+          # Allow legitimate patterns
+          git secrets --add --allowed '\$\{\{\s*secrets\.[A-Z_]+\s*\}\}'  # GitHub Actions secrets
+          git secrets --add --allowed '\$\{[^}]*\}'                       # Environment variables
+          git secrets --add --allowed 'fake[_-]?key'                      # Test/fake keys
+          git secrets --add --allowed 'test[_-]?key'                      # Test keys
+          git secrets --add --allowed 'dummy[_-]?key'                     # Dummy keys
+          git secrets --add --allowed 'example[_-]?key'                   # Example keys
+          git secrets --add --allowed 'your[_-][a-z]+[_-]key'             # Template placeholders
+          git secrets --add --allowed '.*localhost.*'                     # Local development
+          git secrets --add --allowed '.*127\.0\.0\.1.*'                  # Local development
+          git secrets --add --allowed '.*process\.env\.[A-Z_]+.*'         # Node.js env references
+          git secrets --add --allowed ".*os\.getenv\('.*'\).*"            # Python env references
+          git secrets --add --allowed ".*os\.environ\['.*'\].*"           # Python env references
+          
+      - name: Scan repository for secrets
+        run: |
+          echo "🔍 Scanning OpenLIT repository for exposed secrets..."
+          git secrets --scan-history
+          echo "✅ Repository history scan completed"
+          
+      - name: Scan current changes
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "🔍 Scanning current changes for secrets..."
+          git secrets --scan
+          echo "✅ Current changes scan completed"
+          
+      - name: Create security summary
+        if: always()
+        run: |
+          echo "## 🛡️ OpenLIT Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ✅ Security scan completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**API Keys Scanned For**:" >> $GITHUB_STEP_SUMMARY
+          echo "- OpenAI API keys" >> $GITHUB_STEP_SUMMARY
+          echo "- Anthropic API keys" >> $GITHUB_STEP_SUMMARY
+          echo "- Cohere API keys" >> $GITHUB_STEP_SUMMARY
+          echo "- Mistral API keys" >> $GITHUB_STEP_SUMMARY
+          echo "- Pinecone API keys" >> $GITHUB_STEP_SUMMARY
+          echo "- Groq API keys" >> $GITHUB_STEP_SUMMARY
+          echo "- ElevenLabs API keys" >> $GITHUB_STEP_SUMMARY
+          echo "- Google AI Studio tokens" >> $GITHUB_STEP_SUMMARY
+          echo "- Azure AI Inference tokens" >> $GITHUB_STEP_SUMMARY
+          echo "- Reka API keys" >> $GITHUB_STEP_SUMMARY
+          echo "- Qdrant API tokens & URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- Milvus API tokens & URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- ClickHouse credentials" >> $GITHUB_STEP_SUMMARY
+          echo "- Database URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- AWS credentials" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Scope**: Full repository history + current changes" >> $GITHUB_STEP_SUMMARY

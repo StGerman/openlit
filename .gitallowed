@@ -1,0 +1,28 @@
+# Git-secrets allowed patterns for OpenLIT project
+# Legitimate references to environment variables, configuration, and examples
+
+# GitHub Actions workflow patterns (configuration commands, not actual secrets)
+.*git secrets --add.*
+.*secrets\.[A-Z_]+.*
+
+# Environment variable references in code and documentation  
+.*\$\{[^}]*\}.*
+.*process\.env\.[A-Z_]+.*
+.*os\.getenv\(.*
+.*os\.environ\[.*
+
+# Template and example placeholders
+.*your[_-][a-z]+[_-](key|token|url).*
+.*fake[_-]?(key|token).*
+.*test[_-]?(key|token).*
+.*dummy[_-]?(key|token).*
+.*example[_-]?(key|token).*
+
+# Local development patterns
+.*localhost.*
+.*127\.0\.0\.1.*
+
+# Documentation and code examples
+.*print\(.*
+.*console\.log\(.*
+.*echo.*
